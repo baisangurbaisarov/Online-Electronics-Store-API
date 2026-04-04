@@ -17,7 +17,7 @@ func Connect() {
 	host := getEnv("DB_HOST", "localhost")
 	port := getEnv("DB_PORT", "5432")
 	user := getEnv("DB_USER", "postgres")
-	password := getEnv("DB_PASSWORD", "postgres")
+	password := getEnv("DB_PASSWORD", "040290")
 	dbname := getEnv("DB_NAME", "electronics_store")
 
 	dsn := fmt.Sprintf(
