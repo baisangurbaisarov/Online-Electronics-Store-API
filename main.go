@@ -13,14 +13,12 @@ func main() {
 
 	r := gin.Default()
 
-	// Публичные роуты
 	auth := r.Group("/auth")
 	{
 		auth.POST("/register", handlers.Register)
 		auth.POST("/login", handlers.Login)
 	}
 
-	// Защищённые роуты — нужен JWT
 	api := r.Group("/")
 	api.Use(middleware.AuthRequired())
 	{
