@@ -10,6 +10,8 @@ import (
 
 func main() {
 	database.Connect()
+	database.RunMigrations()
+
 
 	r := gin.Default()
 

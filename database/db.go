@@ -1,12 +1,14 @@
 package database
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"os"
 
-	"electronicsStore/models"
-
+	"github.com/golang-migrate/migrate/v4"
+	_ "github.com/golang-migrate/migrate/v4/database/postgres"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -32,18 +34,51 @@ func Connect() {
 	}
 
 	log.Println("Database connected successfully")
+}
 
-	err = DB.AutoMigrate(
-		&models.User{},
-		&models.Category{},
-		&models.Brand{},
-		&models.Product{},
-	)
+func RunMigrations() {
+	dbURL := buildDatabaseURL()
+
+	m, err := migrate.New("file://migrations", dbURL)
 	if err != nil {
-		log.Fatal("AutoMigrate failed:", err)
+		log.Fatal("Failed to create migrator:", err)
+	}
+	defer m.Close()
+
+	if err := m.Up(); err != nil && !errors.Is(err, migrate.ErrNoChange) {
+		log.Fatal("Migration failed:", err)
 	}
 
-	log.Println("Database migrated successfully")
+	log.Println("Migrations applied successfully")
+}
+
+func RollbackMigration() {
+	dbURL := buildDatabaseURL()
+
+	m, err := migrate.New("file://migrations", dbURL)
+	if err != nil {
+		log.Fatal("Failed to create migrator:", err)
+	}
+	defer m.Close()
+
+	if err := m.Steps(-1); err != nil {
+		log.Fatal("Rollback failed:", err)
+	}
+
+	log.Println("Rolled back 1 migration step")
+}
+
+func buildDatabaseURL() string {
+	host := getEnv("DB_HOST", "localhost")
+	port := getEnv("DB_PORT", "5432")
+	user := getEnv("DB_USER", "postgres")
+	password := getEnv("DB_PASSWORD", "040290")
+	dbname := getEnv("DB_NAME", "electronics_store")
+
+	return fmt.Sprintf(
+		"postgres://%s:%s@%s:%s/%s?sslmode=disable",
+		user, password, host, port, dbname,
+	)
 }
 
 func getEnv(key, fallback string) string {

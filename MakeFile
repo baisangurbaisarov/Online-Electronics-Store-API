@@ -1,0 +1,108 @@
+# ──────────────────────────────────────────────
+#  Electronics Store — Makefile
+# ──────────────────────────────────────────────
+
+# Database connection URL (can be overridden via env)
+DB_URL ?= postgres://postgres:040290@localhost:5432/electronics_store?sslmode=disable
+
+# Path to migration files
+MIGRATIONS_DIR = migrations
+
+# ──────────────────────────────────────────────
+#  App
+# ──────────────────────────────────────────────
+
+.PHONY: run
+run:
+	go run main.go
+
+.PHONY: build
+build:
+	go build -o bin/electronicsStore ./...
+
+# ──────────────────────────────────────────────
+#  Dependencies
+# ──────────────────────────────────────────────
+
+.PHONY: tidy
+tidy:
+	go mod tidy
+
+.PHONY: deps
+deps:
+	go get github.com/golang-migrate/migrate/v4
+	go get github.com/golang-migrate/migrate/v4/database/postgres
+	go get github.com/golang-migrate/migrate/v4/source/file
+	go mod tidy
+
+# ──────────────────────────────────────────────
+#  Install migrate CLI (once)
+# ──────────────────────────────────────────────
+
+.PHONY: install-migrate
+install-migrate:
+	go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
+
+# ──────────────────────────────────────────────
+#  Migrations
+# ──────────────────────────────────────────────
+
+## migrate-up: Apply all pending migrations
+.PHONY: migrate-up
+migrate-up:
+	migrate -path $(MIGRATIONS_DIR) -database "$(DB_URL)" up
+
+## migrate-down: Roll back ALL migrations (use with caution!)
+.PHONY: migrate-down
+migrate-down:
+	migrate -path $(MIGRATIONS_DIR) -database "$(DB_URL)" down
+
+## migrate-down-1: Roll back only the last migration step
+.PHONY: migrate-down-1
+migrate-down-1:
+	migrate -path $(MIGRATIONS_DIR) -database "$(DB_URL)" down 1
+
+## migrate-version: Show current migration version
+.PHONY: migrate-version
+migrate-version:
+	migrate -path $(MIGRATIONS_DIR) -database "$(DB_URL)" version
+
+## migrate-force: Force-set version (use after fixing a broken migration)
+## Usage: make migrate-force VERSION=3
+.PHONY: migrate-force
+migrate-force:
+	migrate -path $(MIGRATIONS_DIR) -database "$(DB_URL)" force $(VERSION)
+
+## migrate-create: Create a new migration pair
+## Usage: make migrate-create NAME=add_description_to_products
+.PHONY: migrate-create
+migrate-create:
+	migrate create -ext sql -dir $(MIGRATIONS_DIR) -seq $(NAME)
+
+# ──────────────────────────────────────────────
+#  Help
+# ──────────────────────────────────────────────
+
+.PHONY: help
+help:
+	@echo ""
+	@echo "Usage:"
+	@echo "  make <target>"
+	@echo ""
+	@echo "App:"
+	@echo "  run              Run the application"
+	@echo "  build            Build binary to bin/"
+	@echo ""
+	@echo "Dependencies:"
+	@echo "  tidy             go mod tidy"
+	@echo "  deps             Add golang-migrate dependencies + tidy"
+	@echo "  install-migrate  Install migrate CLI tool"
+	@echo ""
+	@echo "Migrations:"
+	@echo "  migrate-up       Apply all pending migrations"
+	@echo "  migrate-down     Roll back ALL migrations"
+	@echo "  migrate-down-1   Roll back last 1 migration"
+	@echo "  migrate-version  Show current schema version"
+	@echo "  migrate-force VERSION=N  Force-set version N"
+	@echo "  migrate-create NAME=xxx  Create new migration files"
+	@echo ""
