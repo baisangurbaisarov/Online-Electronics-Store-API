@@ -1,10 +1,10 @@
 package handlers
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"electronicsStore/database"
 	"electronicsStore/models"
@@ -18,6 +18,11 @@ type sentimentResult struct {
 }
 
 func analyzeSentiment(comment string) string {
+	if comment == "" {
+		return "neutral"
+	}
+
+	// Используем resty для запроса к httpbin (демонстрация библиотеки)
 	client := resty.New()
 
 	var result map[string]interface{}
@@ -28,19 +33,46 @@ func analyzeSentiment(comment string) string {
 		Post("https://httpbin.org/anything")
 
 	if err != nil {
-		log.Printf("sentiment API error: %v", err)
-		return "unknown"
+		log.Printf("sentiment API unavailable, using local analysis: %v", err)
+	} else {
+		log.Printf("sentiment API status: %d", resp.StatusCode())
 	}
 
-	log.Printf("sentiment API status: %d", resp.StatusCode())
+	// Локальный анализ по ключевым словам
+	lower := strings.ToLower(comment)
+
+	positiveWords := []string{
+		"good", "great", "excellent", "amazing", "love", "perfect",
+		"awesome", "fantastic", "best", "nice", "happy", "recommend",
+		"хорошо", "отлично", "прекрасно", "люблю", "нравится", "советую",
+	}
+	negativeWords := []string{
+		"bad", "terrible", "awful", "hate", "worst", "poor",
+		"broken", "disappointing", "useless", "horrible", "never",
+		"плохо", "ужасно", "ненавижу", "сломан", "разочарован", "никогда",
+	}
+
+	posScore := 0
+	negScore := 0
+
+	for _, w := range positiveWords {
+		if strings.Contains(lower, w) {
+			posScore++
+		}
+	}
+	for _, w := range negativeWords {
+		if strings.Contains(lower, w) {
+			negScore++
+		}
+	}
 
 	switch {
-	case len(comment) == 0:
-		return "neutral"
-	case len(comment) < 20:
-		return "neutral"
+	case posScore > negScore:
+		return "positive"
+	case negScore > posScore:
+		return "negative"
 	default:
-		return fmt.Sprintf("analyzed(%d chars)", len(comment))
+		return "neutral"
 	}
 }
 
