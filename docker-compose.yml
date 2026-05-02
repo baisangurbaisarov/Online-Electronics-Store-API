@@ -16,6 +16,12 @@ services:
       timeout: 5s
       retries: 5
 
+  sentiment:
+    build: ./sentiment-service
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+
   app:
     build: .
     restart: unless-stopped
@@ -28,9 +34,12 @@ services:
       DB_PASSWORD: ${DB_PASSWORD:-postgres}
       DB_NAME: ${DB_NAME:-electronics_store}
       JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
+      SENTIMENT_URL: http://sentiment:9090
     depends_on:
       db:
         condition: service_healthy
+      sentiment:
+        condition: service_started
 
 volumes:
   postgres_data:
