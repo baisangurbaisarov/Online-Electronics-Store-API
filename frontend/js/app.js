@@ -1,0 +1,338 @@
+const state = {
+  token: localStorage.getItem("token") || "",
+  username: localStorage.getItem("username") || "",
+  currentProductId: null,
+};
+
+const $ = (sel) => document.querySelector(sel);
+const $$ = (sel) => document.querySelectorAll(sel);
+
+function showToast(msg, type = "success") {
+  const el = $("#toast");
+  el.textContent = msg;
+  el.className = `toast ${type}`;
+  setTimeout(() => el.classList.add("hidden"), 3000);
+}
+
+async function api(path, options = {}) {
+  const headers = { "Content-Type": "application/json", ...(options.headers || {}) };
+  if (state.token) headers.Authorization = `Bearer ${state.token}`;
+
+  const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
+  const text = await res.text();
+  let data = null;
+  if (text) {
+    try {
+      data = JSON.parse(text);
+    } catch {
+      data = text;
+    }
+  }
+
+  if (!res.ok) {
+    const err = new Error(data?.error || res.statusText);
+    err.status = res.status;
+    err.data = data;
+    throw err;
+  }
+  return { status: res.status, data };
+}
+
+function showView(name) {
+  $$(".view").forEach((v) => v.classList.add("hidden"));
+  const el = document.getElementById(`view-${name}`);
+  if (el) el.classList.remove("hidden");
+}
+
+function updateAuthUI() {
+  const loggedIn = !!state.token;
+  $("#nav-auth").classList.toggle("hidden", loggedIn);
+  $("#nav-user").classList.toggle("hidden", !loggedIn);
+  $("#bottom-nav").classList.toggle("hidden", !loggedIn);
+  $("#username-label").textContent = state.username;
+  $("#review-form").classList.toggle("hidden", !loggedIn);
+
+  if (loggedIn) {
+    showView("catalog");
+    loadCatalog();
+  } else {
+    showView("login");
+  }
+}
+
+function setAuth(token, username) {
+  state.token = token;
+  state.username = username;
+  localStorage.setItem("token", token);
+  localStorage.setItem("username", username);
+  updateAuthUI();
+}
+
+function logout() {
+  state.token = "";
+  state.username = "";
+  localStorage.removeItem("token");
+  localStorage.removeItem("username");
+  updateAuthUI();
+}
+
+$("#login-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  $("#login-error").textContent = "";
+  const fd = new FormData(e.target);
+  try {
+    const { data } = await api("/auth/login", {
+      method: "POST",
+      body: JSON.stringify({
+        username: fd.get("username"),
+        password: fd.get("password"),
+      }),
+    });
+    setAuth(data.token, fd.get("username"));
+    showToast("Добро пожаловать!");
+  } catch (err) {
+    $("#login-error").textContent = err.data?.error || err.message;
+  }
+});
+
+$("#register-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  $("#register-error").textContent = "";
+  const fd = new FormData(e.target);
+  try {
+    await api("/auth/register", {
+      method: "POST",
+      body: JSON.stringify({
+        username: fd.get("username"),
+        password: fd.get("password"),
+      }),
+    });
+    const { data } = await api("/auth/login", {
+      method: "POST",
+      body: JSON.stringify({
+        username: fd.get("username"),
+        password: fd.get("password"),
+      }),
+    });
+    setAuth(data.token, fd.get("username"));
+    showToast("Аккаунт создан");
+  } catch (err) {
+    $("#register-error").textContent = err.data?.error || err.message;
+  }
+});
+
+$("#logout-btn").addEventListener("click", logout);
+
+document.body.addEventListener("click", (e) => {
+  const view = e.target.closest("[data-view]")?.dataset?.view;
+  if (view) {
+    showView(view);
+    if (view === "catalog") loadCatalog();
+    if (view === "admin") loadAdmin();
+  }
+});
+
+$("#refresh-products").addEventListener("click", loadCatalog);
+$("#filter-brand").addEventListener("change", loadCatalog);
+$("#filter-category").addEventListener("change", loadCatalog);
+
+async function loadFilters() {
+  const [{ data: brands }, { data: categories }] = await Promise.all([
+    api("/brands"),
+    api("/categories"),
+  ]);
+
+  const brandSel = $("#filter-brand");
+  const catSel = $("#filter-category");
+  brandSel.innerHTML = '<option value="">Все бренды</option>';
+  catSel.innerHTML = '<option value="">Все категории</option>';
+
+  brands.forEach((b) => {
+    brandSel.innerHTML += `<option value="${b.id}">${b.name}</option>`;
+  });
+  categories.forEach((c) => {
+    catSel.innerHTML += `<option value="${c.id}">${c.name}</option>`;
+  });
+
+  return { brands, categories };
+}
+
+async function loadCatalog() {
+  try {
+    await loadFilters();
+    const brand = $("#filter-brand").value;
+    const category = $("#filter-category").value;
+    let qs = "?limit=50";
+    if (brand) qs += `&brand_id=${brand}`;
+    if (category) qs += `&category_id=${category}`;
+
+    const { data: products } = await api(`/products${qs}`);
+    const grid = $("#products-grid");
+    grid.innerHTML = "";
+
+    if (!products.length) {
+      grid.innerHTML = '<p class="meta">Товаров пока нет. Добавьте в разделе «Управление».</p>';
+      return;
+    }
+
+    products.forEach((p) => {
+      const card = document.createElement("article");
+      card.className = "product-card";
+      card.innerHTML = `
+        <h3>${escapeHtml(p.name)}</h3>
+        <p class="price">${p.price.toFixed(2)} ₽</p>
+        <p class="meta">${escapeHtml(p.brand?.name || "")} · ${escapeHtml(p.category?.name || "")} · остаток: ${p.stock}</p>
+      `;
+      card.addEventListener("click", () => openProduct(p.id));
+      grid.appendChild(card);
+    });
+  } catch (err) {
+    showToast(err.data?.error || err.message, "error");
+  }
+}
+
+function escapeHtml(s) {
+  const d = document.createElement("div");
+  d.textContent = s ?? "";
+  return d.innerHTML;
+}
+
+async function openProduct(id) {
+  state.currentProductId = id;
+  showView("product");
+
+  const [{ data: product }, { data: reviews }] = await Promise.all([
+    api(`/products/${id}`),
+    api(`/products/${id}/reviews`),
+  ]);
+
+  $("#product-detail").innerHTML = `
+    <div class="product-detail">
+      <h2>${escapeHtml(product.name)}</h2>
+      <p class="price">${product.price.toFixed(2)} ₽</p>
+      <p class="meta">${escapeHtml(product.brand?.name || "")} · ${escapeHtml(product.category?.name || "")}</p>
+      <p>В наличии: ${product.stock} шт.</p>
+    </div>
+  `;
+
+  const list = $("#reviews-list");
+  list.innerHTML = reviews.length
+    ? reviews
+        .map(
+          (r) => `
+      <div class="review-item">
+        <strong>${escapeHtml(r.user?.username || "user")}</strong>
+        <span class="rating">${"★".repeat(r.rating)}${"☆".repeat(5 - r.rating)}</span>
+        <span class="sentiment ${r.sentiment}">${r.sentiment || ""}</span>
+        <p>${escapeHtml(r.comment || "")}</p>
+      </div>
+    `
+        )
+        .join("")
+    : '<p class="meta">Отзывов пока нет</p>';
+}
+
+$("#review-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const fd = new FormData(e.target);
+  try {
+    await api(`/products/${state.currentProductId}/reviews`, {
+      method: "POST",
+      body: JSON.stringify({
+        rating: Number(fd.get("rating")),
+        comment: fd.get("comment"),
+      }),
+    });
+    e.target.reset();
+    showToast("Отзыв добавлен");
+    openProduct(state.currentProductId);
+  } catch (err) {
+    showToast(err.data?.error || err.message, "error");
+  }
+});
+
+async function loadAdmin() {
+  const { brands, categories } = await loadFilters();
+  fillSelect('select[name="brand_id"]', brands);
+  fillSelect('select[name="category_id"]', categories);
+  renderList("#brands-list", brands, deleteBrand);
+  renderList("#categories-list", categories, deleteCategory);
+}
+
+function fillSelect(sel, items) {
+  const el = document.querySelector(sel);
+  el.innerHTML = items.map((i) => `<option value="${i.id}">${escapeHtml(i.name)}</option>`).join("");
+}
+
+function renderList(sel, items, onDelete) {
+  const ul = $(sel);
+  ul.innerHTML = items
+    .map(
+      (i) => `
+    <li>
+      <span>${escapeHtml(i.name)}</span>
+      <button class="btn btn--danger" data-id="${i.id}">Удалить</button>
+    </li>
+  `
+    )
+    .join("");
+
+  ul.querySelectorAll("button").forEach((btn) => {
+    btn.addEventListener("click", () => onDelete(btn.dataset.id));
+  });
+}
+
+async function deleteBrand(id) {
+  await api(`/brands/${id}`, { method: "DELETE" });
+  showToast("Бренд удалён");
+  loadAdmin();
+}
+
+async function deleteCategory(id) {
+  await api(`/categories/${id}`, { method: "DELETE" });
+  showToast("Категория удалена");
+  loadAdmin();
+}
+
+$("#brand-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const name = new FormData(e.target).get("name");
+  await api("/brands", { method: "POST", body: JSON.stringify({ name }) });
+  e.target.reset();
+  showToast("Бренд добавлен");
+  loadAdmin();
+});
+
+$("#category-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const name = new FormData(e.target).get("name");
+  await api("/categories", { method: "POST", body: JSON.stringify({ name }) });
+  e.target.reset();
+  showToast("Категория добавлена");
+  loadAdmin();
+});
+
+$("#product-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const fd = new FormData(e.target);
+  await api("/products", {
+    method: "POST",
+    body: JSON.stringify({
+      name: fd.get("name"),
+      price: Number(fd.get("price")),
+      stock: Number(fd.get("stock")),
+      brand_id: Number(fd.get("brand_id")),
+      category_id: Number(fd.get("category_id")),
+    }),
+  });
+  e.target.reset();
+  showToast("Товар создан");
+  loadAdmin();
+});
+
+if (state.token) {
+  updateAuthUI();
+} else {
+  showView("login");
+  $("#nav-auth").classList.remove("hidden");
+}

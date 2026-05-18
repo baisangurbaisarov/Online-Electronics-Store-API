@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Electronics Store</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <header class="header">
+    <div class="container header__inner">
+      <h1 class="logo">⚡ Electronics Store</h1>
+      <nav class="nav" id="nav-auth">
+        <button class="btn btn--ghost" data-view="login">Вход</button>
+        <button class="btn btn--primary" data-view="register">Регистрация</button>
+      </nav>
+      <nav class="nav hidden" id="nav-user">
+        <span class="nav__user" id="username-label"></span>
+        <button class="btn btn--ghost" id="logout-btn">Выйти</button>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container main">
+    <section id="view-login" class="card view hidden">
+      <h2>Вход</h2>
+      <form id="login-form" class="form">
+        <label>Логин<input name="username" required autocomplete="username" /></label>
+        <label>Пароль<input name="password" type="password" required autocomplete="current-password" /></label>
+        <button type="submit" class="btn btn--primary">Войти</button>
+        <p class="form__error" id="login-error"></p>
+      </form>
+    </section>
+
+    <section id="view-register" class="card view hidden">
+      <h2>Регистрация</h2>
+      <form id="register-form" class="form">
+        <label>Логин<input name="username" required autocomplete="username" /></label>
+        <label>Пароль (мин. 6)<input name="password" type="password" minlength="6" required autocomplete="new-password" /></label>
+        <button type="submit" class="btn btn--primary">Создать аккаунт</button>
+        <p class="form__error" id="register-error"></p>
+      </form>
+    </section>
+
+    <section id="view-catalog" class="view hidden">
+      <div class="toolbar">
+        <h2>Каталог</h2>
+        <div class="toolbar__actions">
+          <select id="filter-brand"><option value="">Все бренды</option></select>
+          <select id="filter-category"><option value="">Все категории</option></select>
+          <button class="btn btn--primary" id="refresh-products">Обновить</button>
+        </div>
+      </div>
+      <div id="products-grid" class="grid"></div>
+    </section>
+
+    <section id="view-product" class="view hidden">
+      <button class="btn btn--ghost back-btn" data-view="catalog">← Назад</button>
+      <div id="product-detail" class="card"></div>
+      <div class="card">
+        <h3>Отзывы</h3>
+        <div id="reviews-list"></div>
+        <form id="review-form" class="form hidden">
+          <label>Оценка (1–5)<input name="rating" type="number" min="1" max="5" required /></label>
+          <label>Комментарий<textarea name="comment" rows="3"></textarea></label>
+          <button type="submit" class="btn btn--primary">Оставить отзыв</button>
+        </form>
+      </div>
+    </section>
+
+    <section id="view-admin" class="view hidden">
+      <h2>Управление</h2>
+      <div class="admin-grid">
+        <div class="card">
+          <h3>Бренды</h3>
+          <form id="brand-form" class="form form--inline">
+            <input name="name" placeholder="Название бренда" required />
+            <button type="submit" class="btn btn--primary">Добавить</button>
+          </form>
+          <ul id="brands-list" class="list"></ul>
+        </div>
+        <div class="card">
+          <h3>Категории</h3>
+          <form id="category-form" class="form form--inline">
+            <input name="name" placeholder="Название категории" required />
+            <button type="submit" class="btn btn--primary">Добавить</button>
+          </form>
+          <ul id="categories-list" class="list"></ul>
+        </div>
+        <div class="card card--wide">
+          <h3>Новый товар</h3>
+          <form id="product-form" class="form">
+            <label>Название<input name="name" required /></label>
+            <label>Цена<input name="price" type="number" step="0.01" min="0.01" required /></label>
+            <label>Остаток<input name="stock" type="number" min="0" value="0" /></label>
+            <label>Бренд<select name="brand_id" required></select></label>
+            <label>Категория<select name="category_id" required></select></label>
+            <button type="submit" class="btn btn--primary">Создать товар</button>
+          </form>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <nav class="bottom-nav hidden" id="bottom-nav">
+    <button data-view="catalog">Каталог</button>
+    <button data-view="admin">Управление</button>
+  </nav>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="js/config.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
