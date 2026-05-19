@@ -89,7 +89,7 @@ $("#login-form").addEventListener("submit", async (e) => {
       }),
     });
     setAuth(data.token, fd.get("username"));
-    showToast("Добро пожаловать!");
+    showToast("Welcome!");
   } catch (err) {
     $("#login-error").textContent = err.data?.error || err.message;
   }
@@ -115,7 +115,7 @@ $("#register-form").addEventListener("submit", async (e) => {
       }),
     });
     setAuth(data.token, fd.get("username"));
-    showToast("Аккаунт создан");
+    showToast("Account created");
   } catch (err) {
     $("#register-error").textContent = err.data?.error || err.message;
   }
@@ -144,8 +144,8 @@ async function loadFilters() {
 
   const brandSel = $("#filter-brand");
   const catSel = $("#filter-category");
-  brandSel.innerHTML = '<option value="">Все бренды</option>';
-  catSel.innerHTML = '<option value="">Все категории</option>';
+  brandSel.innerHTML = '<option value="">All brands</option>';
+  catSel.innerHTML = '<option value="">All categories</option>';
 
   brands.forEach((b) => {
     brandSel.innerHTML += `<option value="${b.id}">${b.name}</option>`;
@@ -171,7 +171,7 @@ async function loadCatalog() {
     grid.innerHTML = "";
 
     if (!products.length) {
-      grid.innerHTML = '<p class="meta">Товаров пока нет. Добавьте в разделе «Управление».</p>';
+      grid.innerHTML = '<p class="meta">No products yet. Add some in Admin.</p>';
       return;
     }
 
@@ -180,8 +180,8 @@ async function loadCatalog() {
       card.className = "product-card";
       card.innerHTML = `
         <h3>${escapeHtml(p.name)}</h3>
-        <p class="price">${p.price.toFixed(2)} ₽</p>
-        <p class="meta">${escapeHtml(p.brand?.name || "")} · ${escapeHtml(p.category?.name || "")} · остаток: ${p.stock}</p>
+        <p class="price">$${p.price.toFixed(2)}</p>
+        <p class="meta">${escapeHtml(p.brand?.name || "")} · ${escapeHtml(p.category?.name || "")} · stock: ${p.stock}</p>
       `;
       card.addEventListener("click", () => openProduct(p.id));
       grid.appendChild(card);
@@ -209,9 +209,9 @@ async function openProduct(id) {
   $("#product-detail").innerHTML = `
     <div class="product-detail">
       <h2>${escapeHtml(product.name)}</h2>
-      <p class="price">${product.price.toFixed(2)} ₽</p>
+      <p class="price">$${product.price.toFixed(2)}</p>
       <p class="meta">${escapeHtml(product.brand?.name || "")} · ${escapeHtml(product.category?.name || "")}</p>
-      <p>В наличии: ${product.stock} шт.</p>
+      <p>In stock: ${product.stock} units</p>
     </div>
   `;
 
@@ -229,7 +229,7 @@ async function openProduct(id) {
     `
         )
         .join("")
-    : '<p class="meta">Отзывов пока нет</p>';
+    : '<p class="meta">No reviews yet</p>';
 }
 
 $("#review-form").addEventListener("submit", async (e) => {
@@ -244,7 +244,7 @@ $("#review-form").addEventListener("submit", async (e) => {
       }),
     });
     e.target.reset();
-    showToast("Отзыв добавлен");
+    showToast("Review submitted");
     openProduct(state.currentProductId);
   } catch (err) {
     showToast(err.data?.error || err.message, "error");
@@ -271,7 +271,7 @@ function renderList(sel, items, onDelete) {
       (i) => `
     <li>
       <span>${escapeHtml(i.name)}</span>
-      <button class="btn btn--danger" data-id="${i.id}">Удалить</button>
+      <button class="btn btn--danger" data-id="${i.id}">Delete</button>
     </li>
   `
     )
@@ -284,13 +284,13 @@ function renderList(sel, items, onDelete) {
 
 async function deleteBrand(id) {
   await api(`/brands/${id}`, { method: "DELETE" });
-  showToast("Бренд удалён");
+  showToast("Brand deleted");
   loadAdmin();
 }
 
 async function deleteCategory(id) {
   await api(`/categories/${id}`, { method: "DELETE" });
-  showToast("Категория удалена");
+  showToast("Category deleted");
   loadAdmin();
 }
 
@@ -299,7 +299,7 @@ $("#brand-form").addEventListener("submit", async (e) => {
   const name = new FormData(e.target).get("name");
   await api("/brands", { method: "POST", body: JSON.stringify({ name }) });
   e.target.reset();
-  showToast("Бренд добавлен");
+  showToast("Brand added");
   loadAdmin();
 });
 
@@ -308,7 +308,7 @@ $("#category-form").addEventListener("submit", async (e) => {
   const name = new FormData(e.target).get("name");
   await api("/categories", { method: "POST", body: JSON.stringify({ name }) });
   e.target.reset();
-  showToast("Категория добавлена");
+  showToast("Category added");
   loadAdmin();
 });
 
@@ -326,7 +326,7 @@ $("#product-form").addEventListener("submit", async (e) => {
     }),
   });
   e.target.reset();
-  showToast("Товар создан");
+  showToast("Product created");
   loadAdmin();
 });
 

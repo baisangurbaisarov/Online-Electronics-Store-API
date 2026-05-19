@@ -10,5 +10,6 @@
             "database": "electronics_store",
             "username": "postgres"
         }
-    ]
+    ],
+    "makefile.configureOnOpen": false
 }
