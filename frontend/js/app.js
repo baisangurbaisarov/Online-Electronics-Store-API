@@ -1,7 +1,10 @@
+const PAGE_SIZE = 6;
+
 const state = {
   token: localStorage.getItem("token") || "",
   username: localStorage.getItem("username") || "",
   currentProductId: null,
+  catalogPage: 1,
 };
 
 const $ = (sel) => document.querySelector(sel);
@@ -54,7 +57,7 @@ function updateAuthUI() {
 
   if (loggedIn) {
     showView("catalog");
-    loadCatalog();
+    loadCatalog(1, true);
   } else {
     showView("login");
   }
@@ -127,14 +130,22 @@ document.body.addEventListener("click", (e) => {
   const view = e.target.closest("[data-view]")?.dataset?.view;
   if (view) {
     showView(view);
-    if (view === "catalog") loadCatalog();
+    if (view === "catalog") loadCatalog(1, true);
     if (view === "admin") loadAdmin();
   }
 });
 
-$("#refresh-products").addEventListener("click", loadCatalog);
-$("#filter-brand").addEventListener("change", loadCatalog);
-$("#filter-category").addEventListener("change", loadCatalog);
+$("#refresh-products").addEventListener("click", () => loadCatalog(1, true));
+$("#filter-brand").addEventListener("change", () => loadCatalog(1));
+$("#filter-category").addEventListener("change", () => loadCatalog(1));
+
+$("#pagination-prev").addEventListener("click", () => {
+  if (state.catalogPage > 1) loadCatalog(state.catalogPage - 1);
+});
+
+$("#pagination-next").addEventListener("click", () => {
+  loadCatalog(state.catalogPage + 1);
+});
 
 async function loadFilters() {
   const [{ data: brands }, { data: categories }] = await Promise.all([
@@ -157,12 +168,26 @@ async function loadFilters() {
   return { brands, categories };
 }
 
-async function loadCatalog() {
+function updatePagination(itemsOnPage) {
+  const nav = $("#catalog-pagination");
+  const hasPrev = state.catalogPage > 1;
+  const hasNext = itemsOnPage === PAGE_SIZE;
+
+  nav.classList.toggle("hidden", !hasPrev && !hasNext);
+  $("#pagination-prev").disabled = !hasPrev;
+  $("#pagination-next").disabled = !hasNext;
+  $("#pagination-info").textContent = `Page ${state.catalogPage}`;
+}
+
+async function loadCatalog(page = state.catalogPage, reloadFilters = false) {
   try {
-    await loadFilters();
+    if (reloadFilters) await loadFilters();
+
+    state.catalogPage = page;
     const brand = $("#filter-brand").value;
     const category = $("#filter-category").value;
-    let qs = "?limit=50";
+
+    let qs = `?page=${page}&limit=${PAGE_SIZE}`;
     if (brand) qs += `&brand_id=${brand}`;
     if (category) qs += `&category_id=${category}`;
 
@@ -171,7 +196,12 @@ async function loadCatalog() {
     grid.innerHTML = "";
 
     if (!products.length) {
+      if (page > 1) {
+        loadCatalog(page - 1);
+        return;
+      }
       grid.innerHTML = '<p class="meta">No products yet. Add some in Admin.</p>';
+      updatePagination(0);
       return;
     }
 
@@ -186,6 +216,8 @@ async function loadCatalog() {
       card.addEventListener("click", () => openProduct(p.id));
       grid.appendChild(card);
     });
+
+    updatePagination(products.length);
   } catch (err) {
     showToast(err.data?.error || err.message, "error");
   }

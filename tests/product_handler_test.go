@@ -1,4 +1,4 @@
-package handlers
+package handlers_test
 
 import (
 	"encoding/json"
@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"electronicsStore/database"
+	"electronicsStore/handlers"
 	"electronicsStore/models"
 
 	"github.com/stretchr/testify/assert"
@@ -15,7 +16,7 @@ import (
 func TestGetProducts_Empty(t *testing.T) {
 	setupTestDB(t)
 
-	w := performJSONRequest(GetProducts, http.MethodGet, "/products", nil)
+	w := performJSONRequest(handlers.GetProducts, http.MethodGet, "/products", nil)
 
 	assert.Equal(t, http.StatusOK, w.Code)
 
@@ -27,7 +28,7 @@ func TestGetProducts_Empty(t *testing.T) {
 func TestGetProductByID_NotFound(t *testing.T) {
 	setupTestDB(t)
 
-	w := performRequestWithParam(GetProductByID, http.MethodGet, "/products/99", "id", "99", nil)
+	w := performRequestWithParam(handlers.GetProductByID, http.MethodGet, "/products/99", "id", "99", nil)
 
 	assert.Equal(t, http.StatusNotFound, w.Code)
 }
@@ -40,7 +41,7 @@ func TestCreateProduct_MissingName(t *testing.T) {
 	require.NoError(t, database.DB.Create(&brand).Error)
 	require.NoError(t, database.DB.Create(&category).Error)
 
-	w := performJSONRequest(CreateProduct, http.MethodPost, "/products", map[string]any{
+	w := performJSONRequest(handlers.CreateProduct, http.MethodPost, "/products", map[string]any{
 		"name":        "",
 		"price":       99.99,
 		"stock":       5,
@@ -59,7 +60,7 @@ func TestCreateProduct_Success(t *testing.T) {
 	require.NoError(t, database.DB.Create(&brand).Error)
 	require.NoError(t, database.DB.Create(&category).Error)
 
-	w := performJSONRequest(CreateProduct, http.MethodPost, "/products", map[string]any{
+	w := performJSONRequest(handlers.CreateProduct, http.MethodPost, "/products", map[string]any{
 		"name":        "iPhone",
 		"price":       999.99,
 		"stock":       10,

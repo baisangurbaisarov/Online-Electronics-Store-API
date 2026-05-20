@@ -1,10 +1,11 @@
-package handlers
+package handlers_test
 
 import (
 	"encoding/json"
 	"net/http"
 	"testing"
 
+	"electronicsStore/handlers"
 	"electronicsStore/models"
 
 	"github.com/stretchr/testify/assert"
@@ -14,7 +15,7 @@ import (
 func TestCreateBrand_Success(t *testing.T) {
 	setupTestDB(t)
 
-	w := performJSONRequest(CreateBrand, http.MethodPost, "/brands", map[string]string{
+	w := performJSONRequest(handlers.CreateBrand, http.MethodPost, "/brands", map[string]string{
 		"name": "Samsung",
 	})
 
@@ -28,7 +29,7 @@ func TestCreateBrand_Success(t *testing.T) {
 func TestDeleteBrand_NotFound(t *testing.T) {
 	setupTestDB(t)
 
-	w := performRequestWithParam(DeleteBrand, http.MethodDelete, "/brands/42", "id", "42", nil)
+	w := performRequestWithParam(handlers.DeleteBrand, http.MethodDelete, "/brands/42", "id", "42", nil)
 
 	assert.Equal(t, http.StatusNotFound, w.Code)
 }

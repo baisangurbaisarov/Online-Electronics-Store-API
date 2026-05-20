@@ -1,4 +1,4 @@
-package handlers
+package handlers_test
 
 import (
 	"encoding/json"
@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"electronicsStore/database"
+	"electronicsStore/handlers"
 	"electronicsStore/models"
 
 	"github.com/stretchr/testify/assert"
@@ -16,7 +17,7 @@ import (
 func TestRegister_Success(t *testing.T) {
 	setupTestDB(t)
 
-	w := performJSONRequest(Register, http.MethodPost, "/auth/register", map[string]string{
+	w := performJSONRequest(handlers.Register, http.MethodPost, "/auth/register", map[string]string{
 		"username": "alice",
 		"password": "secret1",
 	})
@@ -32,8 +33,8 @@ func TestRegister_DuplicateUsername(t *testing.T) {
 	setupTestDB(t)
 
 	body := map[string]string{"username": "bob", "password": "secret1"}
-	performJSONRequest(Register, http.MethodPost, "/auth/register", body)
-	w := performJSONRequest(Register, http.MethodPost, "/auth/register", body)
+	performJSONRequest(handlers.Register, http.MethodPost, "/auth/register", body)
+	w := performJSONRequest(handlers.Register, http.MethodPost, "/auth/register", body)
 
 	assert.Equal(t, http.StatusConflict, w.Code)
 }
@@ -41,7 +42,7 @@ func TestRegister_DuplicateUsername(t *testing.T) {
 func TestRegister_ShortPassword(t *testing.T) {
 	setupTestDB(t)
 
-	w := performJSONRequest(Register, http.MethodPost, "/auth/register", map[string]string{
+	w := performJSONRequest(handlers.Register, http.MethodPost, "/auth/register", map[string]string{
 		"username": "carol",
 		"password": "123",
 	})
@@ -55,7 +56,7 @@ func TestLogin_InvalidCredentials(t *testing.T) {
 	hashed, _ := bcrypt.GenerateFromPassword([]byte("correct"), bcrypt.DefaultCost)
 	require.NoError(t, database.DB.Create(&models.User{Username: "dave", Password: string(hashed)}).Error)
 
-	w := performJSONRequest(Login, http.MethodPost, "/auth/login", map[string]string{
+	w := performJSONRequest(handlers.Login, http.MethodPost, "/auth/login", map[string]string{
 		"username": "dave",
 		"password": "wrong",
 	})
@@ -66,12 +67,12 @@ func TestLogin_InvalidCredentials(t *testing.T) {
 func TestLogin_Success(t *testing.T) {
 	setupTestDB(t)
 
-	performJSONRequest(Register, http.MethodPost, "/auth/register", map[string]string{
+	performJSONRequest(handlers.Register, http.MethodPost, "/auth/register", map[string]string{
 		"username": "eve",
 		"password": "secret1",
 	})
 
-	w := performJSONRequest(Login, http.MethodPost, "/auth/login", map[string]string{
+	w := performJSONRequest(handlers.Login, http.MethodPost, "/auth/login", map[string]string{
 		"username": "eve",
 		"password": "secret1",
 	})

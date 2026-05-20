@@ -1,10 +1,11 @@
-package handlers
+package handlers_test
 
 import (
 	"encoding/json"
 	"net/http"
 	"testing"
 
+	"electronicsStore/handlers"
 	"electronicsStore/models"
 
 	"github.com/stretchr/testify/assert"
@@ -14,7 +15,7 @@ import (
 func TestCreateCategory_Success(t *testing.T) {
 	setupTestDB(t)
 
-	w := performJSONRequest(CreateCategory, http.MethodPost, "/categories", map[string]string{
+	w := performJSONRequest(handlers.CreateCategory, http.MethodPost, "/categories", map[string]string{
 		"name": "Laptops",
 	})
 

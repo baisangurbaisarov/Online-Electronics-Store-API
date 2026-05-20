@@ -1,4 +1,4 @@
-package handlers
+package handlers_test
 
 import (
 	"bytes"
@@ -10,8 +10,8 @@ import (
 	"electronicsStore/models"
 
 	"github.com/gin-gonic/gin"
-	"github.com/stretchr/testify/require"
 	"github.com/glebarez/sqlite"
+	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
 )
 
