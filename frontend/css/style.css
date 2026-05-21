@@ -319,6 +319,53 @@ body {
   margin-bottom: 1rem;
 }
 
+.order-card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+  border: 1px solid var(--surface2);
+}
+
+.order-card__header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.order-card__status {
+  font-size: 0.85rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  background: var(--surface2);
+  text-transform: capitalize;
+}
+
+.order-card__status.placed {
+  color: var(--success);
+}
+
+.order-card__items {
+  list-style: none;
+  border-top: 1px solid var(--surface2);
+  padding-top: 0.75rem;
+}
+
+.order-card__items li {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.35rem 0;
+  font-size: 0.95rem;
+}
+
+.order-card__total {
+  margin-top: 0.75rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+
 .bottom-nav {
   position: fixed;
   bottom: 0;
@@ -328,7 +375,7 @@ body {
   border-top: 1px solid var(--surface2);
   display: flex;
   justify-content: center;
-  gap: 2rem;
+  gap: 1rem;
   padding: 0.75rem;
   z-index: 100;
 }

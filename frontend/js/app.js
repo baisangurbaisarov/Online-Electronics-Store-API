@@ -131,6 +131,7 @@ document.body.addEventListener("click", (e) => {
   if (view) {
     showView(view);
     if (view === "catalog") loadCatalog(1, true);
+    if (view === "orders") loadMyOrders();
     if (view === "admin") loadAdmin();
   }
 });
@@ -247,6 +248,11 @@ async function openProduct(id) {
     </div>
   `;
 
+  const qtyInput = $('#order-form input[name="quantity"]');
+  qtyInput.max = Math.max(product.stock, 1);
+  qtyInput.value = product.stock > 0 ? 1 : 0;
+  $("#order-card").classList.toggle("hidden", product.stock <= 0);
+
   const list = $("#reviews-list");
   list.innerHTML = reviews.length
     ? reviews
@@ -262,6 +268,66 @@ async function openProduct(id) {
         )
         .join("")
     : '<p class="meta">No reviews yet</p>';
+}
+
+$("#order-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const qty = Number(new FormData(e.target).get("quantity"));
+  if (!state.currentProductId || qty < 1) return;
+
+  try {
+    await api("/orders", {
+      method: "POST",
+      body: JSON.stringify({
+        items: [{ product_id: state.currentProductId, quantity: qty }],
+      }),
+    });
+    showToast("Order placed");
+    showView("orders");
+    loadMyOrders();
+  } catch (err) {
+    showToast(err.data?.error || err.message, "error");
+  }
+});
+
+async function loadMyOrders() {
+  try {
+    const { data: orders } = await api("/orders");
+    const container = $("#orders-list");
+
+    if (!orders.length) {
+      container.innerHTML = '<p class="meta">You have no orders yet.</p>';
+      return;
+    }
+
+    container.innerHTML = orders
+      .map((order) => {
+        const date = new Date(order.created_at).toLocaleString();
+        const items = (order.items || [])
+          .map(
+            (item) => `
+          <li>
+            <span>${escapeHtml(item.product?.name || "Product")} × ${item.quantity}</span>
+            <span>$${(item.price * item.quantity).toFixed(2)}</span>
+          </li>`
+          )
+          .join("");
+
+        return `
+        <article class="order-card">
+          <div class="order-card__header">
+            <strong>Order #${order.id}</strong>
+            <span class="order-card__status ${escapeHtml(order.status)}">${escapeHtml(order.status)}</span>
+          </div>
+          <p class="meta">${date}</p>
+          <ul class="order-card__items">${items}</ul>
+          <p class="order-card__total">Total: $${Number(order.total).toFixed(2)}</p>
+        </article>`;
+      })
+      .join("");
+  } catch (err) {
+    showToast(err.data?.error || err.message, "error");
+  }
 }
 
 $("#review-form").addEventListener("submit", async (e) => {

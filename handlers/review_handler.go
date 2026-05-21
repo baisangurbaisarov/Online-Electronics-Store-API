@@ -89,13 +89,10 @@ func CreateReview(c *gin.Context) {
 		return
 	}
 
-	userIDRaw, _ := c.Get("userID")
-	userIDFloat, ok := userIDRaw.(float64)
+	userID, ok := requireUserID(c)
 	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Could not identify user"})
 		return
 	}
-	userID := uint(userIDFloat)
 
 	sentiment := analyzeSentiment(input.Comment)
 
@@ -123,13 +120,10 @@ func DeleteReview(c *gin.Context) {
 		return
 	}
 
-	userIDRaw, _ := c.Get("userID")
-	userIDFloat, ok := userIDRaw.(float64)
+	userID, ok := requireUserID(c)
 	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Could not identify user"})
 		return
 	}
-	userID := uint(userIDFloat)
 
 	var review models.Review
 	if err := database.DB.First(&review, id).Error; err != nil {

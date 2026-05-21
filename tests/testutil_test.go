@@ -28,6 +28,8 @@ func setupTestDB(t *testing.T) {
 		&models.Category{},
 		&models.Product{},
 		&models.Review{},
+		&models.Order{},
+		&models.OrderItem{},
 	)
 	require.NoError(t, err)
 
@@ -60,6 +62,22 @@ func performRequestWithParam(handler gin.HandlerFunc, method, path, paramKey, pa
 	c.Request = httptest.NewRequest(method, path, &buf)
 	c.Request.Header.Set("Content-Type", "application/json")
 	c.Params = gin.Params{{Key: paramKey, Value: paramValue}}
+
+	handler(c)
+	return w
+}
+
+func performJSONRequestAsUser(handler gin.HandlerFunc, method, path string, body any, userID uint) *httptest.ResponseRecorder {
+	var buf bytes.Buffer
+	if body != nil {
+		_ = json.NewEncoder(&buf).Encode(body)
+	}
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest(method, path, &buf)
+	c.Request.Header.Set("Content-Type", "application/json")
+	c.Set("userID", float64(userID))
 
 	handler(c)
 	return w

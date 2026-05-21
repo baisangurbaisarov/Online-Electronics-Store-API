@@ -37,6 +37,10 @@ func Setup() *gin.Engine {
 		api.GET("/categories", handlers.GetCategories)
 		api.POST("/categories", handlers.CreateCategory)
 		api.DELETE("/categories/:id", handlers.DeleteCategory)
+
+		api.POST("/orders", handlers.CreateOrder)
+		api.GET("/orders", handlers.GetMyOrders)
+		api.GET("/orders/:id", handlers.GetOrderByID)
 	}
 
 	return r
